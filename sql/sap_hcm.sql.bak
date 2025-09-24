@@ -1,0 +1,62 @@
+CREATE OR REPLACE FUNCTION update_updated_at_char_column()
+RETURNS TRIGGER AS $$
+BEGIN
+ NEW.updated_at_char = to_char(now(),'YYYY-MM-DD HH24:MI:SS.MS');
+ RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- midpoint.sap_hcm definition
+
+-- Drop table
+
+-- DROP TABLE midpoint.sap_hcm;
+
+CREATE TABLE public.sap_hcm (
+	pernr varchar NOT NULL, -- Personal number
+	birthdate varchar NULL, -- Date of birth
+	gender varchar NULL, -- Gender 
+	natio varchar NULL, -- Natiaonality 
+	begda varchar NULL, -- Valid from
+	endda varchar NULL, -- Valid to
+	orgeh varchar NULL, -- Organizational unit
+	"plans" varchar NULL, -- Job title ID
+	job varchar NULL, -- Job title
+	persg varchar NULL, -- N/A
+	persk varchar NULL, -- N/A
+	workschedule varchar NULL, -- N/A
+	contract_type varchar NULL, -- N/A
+	email varchar NULL, -- E-mail
+	phone varchar NULL, -- Phone number
+	"location" varchar NULL, -- Location
+	firstname varchar NULL, -- First name
+	lastname varchar NULL, -- Last name
+	title varchar NULL, -- Title
+	updated_at_char varchar NULL, -- N/A
+	parent_pernr varchar NULL, -- Main contract ID
+	CONSTRAINT sap_hcm_pk PRIMARY KEY (pernr)
+);
+
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sap_user;
+
+-- Table Triggers
+
+create trigger update_updated_at_char before
+update
+    on
+     public.sap_hcm for each row execute function update_updated_at_char_column();
+
+-- TODO import csv here...
+
+-- fill parent_pernr
+update public.sap_hcm
+set parent_pernr=pernr
+where sap_hcm.parent_pernr is null;
+
+
+-- multiplicity data
+INSERT INTO public.sap_hcm (pernr,birthdate,gender,natio,begda,endda,orgeh,"plans",job,persg,persk,workschedule,contract_type,email,phone,"location",firstname,lastname,title,updated_at_char,parent_pernr) VALUES
+	 ('10026','09.12.2001','D','DE','01.01.2024','31.12.2026','1067','PL3813','IT-Administrator','Hilfskräfte','Nicht-Wissenschaftlich','Teilzeit','befristet','marcokusch@yahoo.de','00283 99873','Campus West','Dipl.-Ing.','Annamaria Schweitzer MBA.','Prof. Dr.',NULL,'00026'),
+	 ('10437','05.02.1989','D','DE','01.03.2025','31.12.2025','1020','PL4494','Tutor','Beamte','Nicht-Wissenschaftlich','Nicht-Wissenschaftlich','befristet','nataliaziegert@googlemail.com','+49(0) 694588478','Campus Mitte','Lili','Trommler-Hertrampf','PD Dr.',NULL,'00437'),
+	 ('20437','25.02.1989','D','DE','01.03.2025','31.12.2025','1103','PL4494','Tutor','Beamte','Nicht-Wissenschaftlich','Nicht-Wissenschaftlich','befristet','nataliaziegert@googlemail.com','+49(0) 694588478','Campus Mitte','Lili','Trommler-Hertrampf','PD Dr.',NULL,'00437'),
+	 ('11247','11.10.1987','D','DE','01.01.2024','31.12.2026','1041','PL5084','Bibliothekar','Hilfskräfte','Bibliothekar','Wissenschaftlich','Werkstudent','anna-luisetrubin@tschentscher.net','0416278851','Campus Mitte','Fanny','Hande','PD Dr.',NULL,'01247');

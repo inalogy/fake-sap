@@ -1,0 +1,30 @@
+# Development Docker Compose for local database setup
+version: '3.8'
+
+services:
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: sap-postgres-dev
+    environment:
+      POSTGRES_DB: sap
+      POSTGRES_USER: sap_user
+      POSTGRES_PASSWORD: P6v5AbvmO_EZQWVI.CqN8f8S
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"  # Using port 5433 to avoid conflict with system PostgreSQL
+    networks:
+      - sap-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sap_user -d sap"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  sap-dev-network:
+    driver: bridge

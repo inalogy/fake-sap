@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-react-app:*)",
+      "Bash(npm install)",
+      "Bash(docker-compose up:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(npm start)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(brew services:*)",
+      "Bash(pg_ctl:*)",
+      "Bash(initdb:*)",
+      "Read(//opt/homebrew/var/log/**)",
+      "Bash(psql:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)",
+      "Bash(open:*)",
+      "Bash(/dev/null)",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"SELECT COUNT(*) FROM pa0000 LIMIT 5;\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"SELECT COUNT(*) FROM sap_hcm;\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"SELECT COUNT(*) FROM sap_om;\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"\\dt\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -f sql/03-sap-om-schema.sql)",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -f sql/04-sap-hcm-employees.sql)",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"SELECT COUNT(*) FROM sap_hcm; SELECT COUNT(*) FROM sap_om;\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"\\d\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"\\d sap_hcm\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"\\d sap_om\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"ALTER TABLE sap_hcm ADD COLUMN nobilitytitle character varying(100);\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"TRUNCATE TABLE sap_hcm, sap_om CASCADE;\")",
+      "Read(//private/tmp/**)",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"SELECT objid, short, stext, org_level FROM sap_om LIMIT 5;\")",
+      "Bash(PGPASSWORD=P6v5AbvmO_EZQWVI.CqN8f8S psql -h localhost -p 5433 -U sap_user -d sap -c \"SELECT DISTINCT job FROM sap_hcm ORDER BY job LIMIT 20;\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

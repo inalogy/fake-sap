@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: sap-postgres
+    environment:
+      POSTGRES_DB: sap
+      POSTGRES_USER: sap_user
+      POSTGRES_PASSWORD: P6v5AbvmO_EZQWVI.CqN8f8S
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - sap-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sap_user -d sap"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: sap-app
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sap
+      DB_USER: sap_user
+      DB_PASSWORD: P6v5AbvmO_EZQWVI.CqN8f8S
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production}
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sap-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  sap-network:
+    driver: bridge
