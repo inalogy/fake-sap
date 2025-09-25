@@ -1,0 +1,301 @@
+---
+- name: Deploy SAP HCM Application on Rocky Linux
+  hosts: rocky_servers
+  become: yes
+  vars:
+    app_name: "sap-hcm-app"
+    app_user: "sap-app"
+    app_dir: "/opt/{{ app_name }}"
+    node_version: "18"
+    postgres_version: "15"
+    db_name: "sap"
+    db_user: "sap_user"
+    db_password: "P6v5AbvmO_EZQWVI.CqN8f8S"
+    app_port: 3001
+    client_port: 3000
+
+  tasks:
+    # System Updates and Basic Packages
+    - name: Update system packages
+      dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+
+    - name: Install EPEL repository
+      dnf:
+        name: epel-release
+        state: present
+
+    - name: Install basic development tools
+      dnf:
+        name:
+          - "@Development Tools"
+          - git
+          - curl
+          - wget
+          - unzip
+          - firewalld
+          - nginx
+          - python3-pip
+          - python3-psycopg2
+        state: present
+
+    # Create application user
+    - name: Create application user
+      user:
+        name: "{{ app_user }}"
+        system: yes
+        shell: /bin/bash
+        home: "{{ app_dir }}"
+        create_home: yes
+
+    # Node.js Installation
+    - name: Install Node.js repository
+      shell: |
+        curl -fsSL https://rpm.nodesource.com/setup_{{ node_version }}.x | bash -
+      args:
+        creates: /etc/yum.repos.d/nodesource-el8.repo
+
+    - name: Install Node.js
+      dnf:
+        name: nodejs
+        state: present
+
+    - name: Install PM2 globally
+      npm:
+        name: pm2
+        global: yes
+
+    # PostgreSQL Installation and Configuration
+    - name: Install PostgreSQL
+      dnf:
+        name:
+          - postgresql-server
+          - postgresql-contrib
+          - postgresql-devel
+        state: present
+
+    - name: Initialize PostgreSQL database
+      command: postgresql-setup --initdb
+      args:
+        creates: /var/lib/pgsql/data/postgresql.conf
+      become_user: postgres
+
+    - name: Start and enable PostgreSQL
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Configure PostgreSQL authentication
+      lineinfile:
+        path: /var/lib/pgsql/data/pg_hba.conf
+        regexp: '^local\s+all\s+all\s+peer'
+        line: 'local   all             all                                     md5'
+        backup: yes
+      notify: restart postgresql
+
+    - name: Configure PostgreSQL to listen on all addresses
+      lineinfile:
+        path: /var/lib/pgsql/data/postgresql.conf
+        regexp: "^#listen_addresses"
+        line: "listen_addresses = '*'"
+        backup: yes
+      notify: restart postgresql
+
+    # Database Setup
+    - name: Create database user
+      postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        role_attr_flags: CREATEDB,NOSUPERUSER
+      become_user: postgres
+
+    - name: Create database
+      postgresql_db:
+        name: "{{ db_name }}"
+        owner: "{{ db_user }}"
+      become_user: postgres
+
+    - name: Grant all privileges to user
+      postgresql_privs:
+        db: "{{ db_name }}"
+        privs: ALL
+        type: database
+        obj: "{{ db_name }}"
+        role: "{{ db_user }}"
+      become_user: postgres
+
+    # Application Deployment
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+    - name: Copy application files
+      synchronize:
+        src: "{{ playbook_dir }}/../"
+        dest: "{{ app_dir }}/"
+        delete: yes
+        rsync_opts:
+          - "--exclude=node_modules"
+          - "--exclude=client/node_modules"
+          - "--exclude=client/build"
+          - "--exclude=.git"
+          - "--exclude=ansible"
+      become_user: "{{ app_user }}"
+
+    - name: Install backend dependencies
+      npm:
+        path: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+
+    - name: Install frontend dependencies
+      npm:
+        path: "{{ app_dir }}/client"
+      become_user: "{{ app_user }}"
+
+    - name: Build React application
+      command: npm run build
+      args:
+        chdir: "{{ app_dir }}/client"
+      become_user: "{{ app_user }}"
+
+    # Environment Configuration
+    - name: Create environment file
+      template:
+        src: env.j2
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0600'
+
+    # Database Schema Setup
+    - name: Copy database schema files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ app_dir }}/sql/"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+      with_fileglob:
+        - "{{ playbook_dir }}/../sql/*.sql"
+
+    - name: Run database schema setup
+      shell: |
+        PGPASSWORD={{ db_password }} psql -h localhost -p 5432 -U {{ db_user }} -d {{ db_name }} -f {{ item }}
+      with_items:
+        - "{{ app_dir }}/sql/01-sap-hcm-schema.sql"
+        - "{{ app_dir }}/sql/02-sap-om-schema.sql"
+        - "{{ app_dir }}/sql/03-sap-om-data.sql"
+        - "{{ app_dir }}/sql/04-sap-hcm-employees.sql"
+      become_user: "{{ app_user }}"
+      ignore_errors: yes
+
+    # PM2 Configuration
+    - name: Create PM2 ecosystem file
+      template:
+        src: ecosystem.config.js.j2
+        dest: "{{ app_dir }}/ecosystem.config.js"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+
+    - name: Start application with PM2
+      command: pm2 start ecosystem.config.js
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+
+    - name: Save PM2 configuration
+      command: pm2 save
+      become_user: "{{ app_user }}"
+
+    - name: Generate PM2 startup script
+      command: pm2 startup systemd -u {{ app_user }} --hp {{ app_dir }}
+      register: pm2_startup
+
+    - name: Execute PM2 startup command
+      shell: "{{ pm2_startup.stdout }}"
+      when: pm2_startup.stdout is defined
+
+    # Nginx Configuration
+    - name: Create nginx configuration
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/conf.d/{{ app_name }}.conf
+        backup: yes
+      notify: restart nginx
+
+    - name: Remove default nginx site
+      file:
+        path: /etc/nginx/nginx.conf
+        state: absent
+      ignore_errors: yes
+
+    - name: Create custom nginx.conf
+      template:
+        src: nginx-main.conf.j2
+        dest: /etc/nginx/nginx.conf
+        backup: yes
+      notify: restart nginx
+
+    # Firewall Configuration
+    - name: Start and enable firewalld
+      systemd:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: Open HTTP port
+      firewalld:
+        port: 80/tcp
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Open HTTPS port
+      firewalld:
+        port: 443/tcp
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Open PostgreSQL port (optional, for remote access)
+      firewalld:
+        port: 5432/tcp
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    # SELinux Configuration
+    - name: Set SELinux boolean for nginx
+      seboolean:
+        name: httpd_can_network_connect
+        state: yes
+        persistent: yes
+
+    - name: Set SELinux context for application directory
+      sefcontext:
+        target: "{{ app_dir }}(/.*)?"
+        setype: httpd_exec_t
+        state: present
+
+    - name: Apply SELinux context
+      command: restorecon -Rv {{ app_dir }}
+
+  handlers:
+    - name: restart postgresql
+      systemd:
+        name: postgresql
+        state: restarted
+
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: yes
