@@ -7,15 +7,17 @@
     app_user: "sap-app"
     app_dir: "/opt/{{ app_name }}"
     node_version: "18"
-    postgres_version: "15"
+    postgres_version: "15"     # kept for reference (distro packages are used)
     db_name: "sap"
     db_user: "sap_user"
     db_password: "P6v5AbvmO_EZQWVI.CqN8f8S"
-    app_port: 3001
+    app_port: 3005
     client_port: 3000
 
   tasks:
-    # System Updates and Basic Packages
+    # ----------------------------
+    # System Updates and Packages
+    # ----------------------------
     - name: Update system packages
       dnf:
         name: "*"
@@ -41,7 +43,9 @@
           - python3-psycopg2
         state: present
 
-    # Create application user
+    # ----------------------------
+    # App User
+    # ----------------------------
     - name: Create application user
       user:
         name: "{{ app_user }}"
@@ -50,25 +54,30 @@
         home: "{{ app_dir }}"
         create_home: yes
 
-    # Node.js Installation
-    - name: Install Node.js repository
+    # ----------------------------
+    # Node.js + PM2
+    # ----------------------------
+    - name: Install NodeSource repo for Node.js {{ node_version }}
       shell: |
         curl -fsSL https://rpm.nodesource.com/setup_{{ node_version }}.x | bash -
       args:
-        creates: /etc/yum.repos.d/nodesource-el8.repo
+        creates: /etc/yum.repos.d/nodesource*.repo
 
     - name: Install Node.js
       dnf:
         name: nodejs
         state: present
 
-    - name: Install PM2 globally
-      npm:
+    - name: Install PM2 globally (idempotent)
+      community.general.npm:
         name: pm2
-        global: yes
+        global: true
+        state: present
 
-    # PostgreSQL Installation and Configuration
-    - name: Install PostgreSQL
+    # ----------------------------
+    # PostgreSQL
+    # ----------------------------
+    - name: Install PostgreSQL server and tools
       dnf:
         name:
           - postgresql-server
@@ -76,11 +85,12 @@
           - postgresql-devel
         state: present
 
-    - name: Initialize PostgreSQL database
+    - name: Initialize PostgreSQL database cluster (runs once)
       command: postgresql-setup --initdb
       args:
         creates: /var/lib/pgsql/data/postgresql.conf
-      become_user: postgres
+      # must be root on Rocky
+      become_user: root
 
     - name: Start and enable PostgreSQL
       systemd:
@@ -88,46 +98,69 @@
         state: started
         enabled: yes
 
-    - name: Configure PostgreSQL authentication
+    - name: Configure PostgreSQL local auth to md5
       lineinfile:
         path: /var/lib/pgsql/data/pg_hba.conf
-        regexp: '^local\s+all\s+all\s+peer'
+        regexp: '^local\s+all\s+all\s+\S+'
         line: 'local   all             all                                     md5'
         backup: yes
       notify: restart postgresql
 
-    - name: Configure PostgreSQL to listen on all addresses
+    - name: Ensure PostgreSQL listens on all addresses
       lineinfile:
         path: /var/lib/pgsql/data/postgresql.conf
-        regexp: "^#listen_addresses"
+        regexp: "^(#\\s*)?listen_addresses\\s*=.*$"
         line: "listen_addresses = '*'"
         backup: yes
       notify: restart postgresql
 
-    # Database Setup
-    - name: Create database user
-      postgresql_user:
-        name: "{{ db_user }}"
-        password: "{{ db_password }}"
-        role_attr_flags: CREATEDB,NOSUPERUSER
-      become_user: postgres
+    # If you need remote access from anywhere, you may also want a host rule:
+    - name: Allow md5 from all hosts
+      lineinfile:
+        path: /var/lib/pgsql/data/pg_hba.conf
+        insertafter: '^#.*IPv4 local connections:'
+        line: 'host    all             all             10.0.0.0/0               md5'
+      notify: restart postgresql
 
-    - name: Create database
-      postgresql_db:
+    # Make sure config changes are applied before schema load
+    - name: Apply DB config changes now
+      meta: flush_handlers
+
+    - name: Ensure database user exists (don’t fail if already present)
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: "{{ db_user }}"
+        state: present
+        role_attr_flags: CREATEDB,NOSUPERUSER
+        # Skip password inspection/changes if the role already exists (prevents false diffs/permission issues).
+        # Set to "no" if you *do* want Ansible to manage/rotate the password.
+        no_password_changes: yes
+        # If you *do* want to set it on first creation only, keep it here:
+        password: "{{ db_password }}"
+
+    - name: Ensure database exists
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_db:
         name: "{{ db_name }}"
         owner: "{{ db_user }}"
-      become_user: postgres
+        state: present
 
-    - name: Grant all privileges to user
-      postgresql_privs:
+    - name: Ensure user has privileges on the database
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_privs:
         db: "{{ db_name }}"
-        privs: ALL
         type: database
-        obj: "{{ db_name }}"
-        role: "{{ db_user }}"
-      become_user: postgres
+        objs: ["{{ db_name }}"]   # singular form "obj" can be flaky; use "objs"
+        roles: ["{{ db_user }}"]  # use list form
+        privs: ALL
+        state: present
 
+    # ----------------------------
     # Application Deployment
+    # ----------------------------
     - name: Create application directory
       file:
         path: "{{ app_dir }}"
@@ -150,13 +183,15 @@
       become_user: "{{ app_user }}"
 
     - name: Install backend dependencies
-      npm:
+      community.general.npm:
         path: "{{ app_dir }}"
+        production: false
       become_user: "{{ app_user }}"
 
     - name: Install frontend dependencies
-      npm:
+      community.general.npm:
         path: "{{ app_dir }}/client"
+        production: false
       become_user: "{{ app_user }}"
 
     - name: Build React application
@@ -165,7 +200,9 @@
         chdir: "{{ app_dir }}/client"
       become_user: "{{ app_user }}"
 
+    # ----------------------------
     # Environment Configuration
+    # ----------------------------
     - name: Create environment file
       template:
         src: env.j2
@@ -174,7 +211,17 @@
         group: "{{ app_user }}"
         mode: '0600'
 
+    # ----------------------------
     # Database Schema Setup
+    # ----------------------------
+    - name: Ensure sql dir exists
+      file:
+        path: "{{ app_dir }}/sql"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
     - name: Copy database schema files
       copy:
         src: "{{ item }}"
@@ -186,17 +233,22 @@
         - "{{ playbook_dir }}/../sql/*.sql"
 
     - name: Run database schema setup
-      shell: |
-        PGPASSWORD={{ db_password }} psql -h localhost -p 5432 -U {{ db_user }} -d {{ db_name }} -f {{ item }}
-      with_items:
+      shell: >
+        PGPASSWORD={{ db_password }} psql -h localhost -p 5432
+        -U {{ db_user }} -d {{ db_name }} -f {{ item }}
+      args:
+        executable: /bin/bash
+      loop:
         - "{{ app_dir }}/sql/01-sap-hcm-schema.sql"
         - "{{ app_dir }}/sql/02-sap-om-schema.sql"
         - "{{ app_dir }}/sql/03-sap-om-data.sql"
         - "{{ app_dir }}/sql/04-sap-hcm-employees.sql"
       become_user: "{{ app_user }}"
-      ignore_errors: yes
-
+      ignore_errors: true
+ #
+    # ----------------------------
     # PM2 Configuration
+    # ----------------------------
     - name: Create PM2 ecosystem file
       template:
         src: ecosystem.config.js.j2
@@ -205,46 +257,82 @@
         group: "{{ app_user }}"
         mode: '0644'
 
-    - name: Start application with PM2
+    - name: Start application with PM2 (user session)
       command: pm2 start ecosystem.config.js
       args:
         chdir: "{{ app_dir }}"
       become_user: "{{ app_user }}"
 
-    - name: Save PM2 configuration
+    - name: Save PM2 process list (user session)
       command: pm2 save
       become_user: "{{ app_user }}"
 
-    - name: Generate PM2 startup script
+    # Generate the systemd unit (once), but DO NOT execute its stdout
+    - name: Check if pm2 systemd unit already exists
+      stat:
+        path: "/etc/systemd/system/pm2-{{ app_user }}.service"
+      register: pm2_unit_stat
+
+    - name: Run pm2 startup to create systemd unit (if missing)
       command: pm2 startup systemd -u {{ app_user }} --hp {{ app_dir }}
+      when: not pm2_unit_stat.stat.exists
       register: pm2_startup
 
-    - name: Execute PM2 startup command
-      shell: "{{ pm2_startup.stdout }}"
-      when: pm2_startup.stdout is defined
+    # Override the generated unit to run foreground (fixes PID ownership refusal)
+    - name: Ensure override directory exists
+      file:
+        path: "/etc/systemd/system/pm2-{{ app_user }}.service.d"
+        state: directory
+        mode: "0755"
 
-    # Nginx Configuration
-    - name: Create nginx configuration
+    - name: Write systemd override to run PM2 in foreground
+      copy:
+        dest: "/etc/systemd/system/pm2-{{ app_user }}.service.d/override.conf"
+        mode: "0644"
+        content: |
+          [Service]
+          Type=simple
+          ExecStart=
+          ExecStart=/usr/bin/pm2 resurrect --no-daemon
+          PIDFile=
+          KillMode=process
+          Restart=on-failure
+          Environment=PATH=/usr/local/bin:/usr/bin:/bin
+          Environment=PM2_HOME={{ app_dir }}/.pm2
+          User={{ app_user }}
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable & restart pm2 service
+      systemd:
+        name: "pm2-{{ app_user }}"
+        enabled: true
+        state: restarted
+
+    # ----------------------------
+    # Nginx
+    # ----------------------------
+    - name: Create nginx site config
       template:
         src: nginx.conf.j2
         dest: /etc/nginx/conf.d/{{ app_name }}.conf
         backup: yes
       notify: restart nginx
 
-    - name: Remove default nginx site
-      file:
-        path: /etc/nginx/nginx.conf
-        state: absent
-      ignore_errors: yes
-
-    - name: Create custom nginx.conf
+    # Avoid removing the main nginx.conf; manage only conf.d
+    - name: Create custom nginx main config (optional override)
       template:
         src: nginx-main.conf.j2
         dest: /etc/nginx/nginx.conf
         backup: yes
       notify: restart nginx
+      when: nginx_main_override | default(true) | bool
 
-    # Firewall Configuration
+    # ----------------------------
+    # Firewall
+    # ----------------------------
     - name: Start and enable firewalld
       systemd:
         name: firewalld
@@ -265,24 +353,26 @@
         state: enabled
         immediate: yes
 
-    - name: Open PostgreSQL port (optional, for remote access)
+    - name: Open PostgreSQL port (optional)
       firewalld:
         port: 5432/tcp
         permanent: yes
         state: enabled
         immediate: yes
 
-    # SELinux Configuration
-    - name: Set SELinux boolean for nginx
+    # ----------------------------
+    # SELinux
+    # ----------------------------
+    - name: Allow nginx to connect to network (proxy to Node)
       seboolean:
         name: httpd_can_network_connect
         state: yes
         persistent: yes
 
-    - name: Set SELinux context for application directory
+    - name: Set SELinux context for application directory (content)
       sefcontext:
         target: "{{ app_dir }}(/.*)?"
-        setype: httpd_exec_t
+        setype: httpd_sys_content_t
         state: present
 
     - name: Apply SELinux context
