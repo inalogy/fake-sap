@@ -18,6 +18,9 @@ import {
 import { ArrowBack, Save, Cancel, AutoFixHigh } from '@mui/icons-material';
 import axios from 'axios';
 import { generateRealisticEmployee } from '../../utils/employeeGenerator';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import './DatePicker.css';
 
 interface Organization {
   objid: string;
@@ -46,6 +49,26 @@ interface Employee {
   persg: string;
   persk: string;
 }
+
+// Helper functions for date conversion
+const parseDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  const parts = dateStr.split('.');
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (!isNaN(date.getTime())) return date;
+  }
+  return null;
+};
+
+const formatDate = (date: Date | null): string => {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+};
 
 const EmployeeForm: React.FC = () => {
   const { pernr } = useParams<{ pernr: string }>();
@@ -340,14 +363,27 @@ const EmployeeForm: React.FC = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Date of Birth"
-                value={employee.birthdate || ''}
-                onChange={(e) => handleInputChange('birthdate', e.target.value)}
-                placeholder="dd.mm.yyyy"
-                helperText="Format: dd.mm.yyyy"
-              />
+              <Box>
+                <DatePicker
+                  selected={parseDate(employee.birthdate || '')}
+                  onChange={(date) => handleInputChange('birthdate', formatDate(date))}
+                  dateFormat="dd.MM.yyyy"
+                  placeholderText="DD.MM.YYYY"
+                  customInput={
+                    <TextField
+                      fullWidth
+                      label="Date of Birth"
+                      helperText="Employee's date of birth"
+                    />
+                  }
+                  showYearDropdown
+                  scrollableYearDropdown
+                  yearDropdownItemNumber={100}
+                  popperProps={{
+                    strategy: 'fixed'
+                  }}
+                />
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -514,27 +550,51 @@ const EmployeeForm: React.FC = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Valid From"
-                value={employee.begda || ''}
-                onChange={(e) => handleInputChange('begda', e.target.value)}
-                required
-                placeholder="dd.mm.yyyy"
-                helperText="Format: dd.mm.yyyy"
-              />
+              <Box>
+                <DatePicker
+                  selected={parseDate(employee.begda || '')}
+                  onChange={(date) => handleInputChange('begda', formatDate(date))}
+                  dateFormat="dd.MM.yyyy"
+                  placeholderText="DD.MM.YYYY"
+                  customInput={
+                    <TextField
+                      fullWidth
+                      required
+                      label="Valid From"
+                      helperText="Contract start date"
+                    />
+                  }
+                  showYearDropdown
+                  scrollableYearDropdown
+                  popperProps={{
+                    strategy: 'fixed'
+                  }}
+                />
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Valid To"
-                value={employee.endda || ''}
-                onChange={(e) => handleInputChange('endda', e.target.value)}
-                required
-                placeholder="dd.mm.yyyy"
-                helperText="Format: dd.mm.yyyy"
-              />
+              <Box>
+                <DatePicker
+                  selected={parseDate(employee.endda || '')}
+                  onChange={(date) => handleInputChange('endda', formatDate(date))}
+                  dateFormat="dd.MM.yyyy"
+                  placeholderText="DD.MM.YYYY"
+                  customInput={
+                    <TextField
+                      fullWidth
+                      required
+                      label="Valid To"
+                      helperText="Contract end date"
+                    />
+                  }
+                  showYearDropdown
+                  scrollableYearDropdown
+                  popperProps={{
+                    strategy: 'fixed'
+                  }}
+                />
+              </Box>
             </Grid>
           </Grid>
 

@@ -18,6 +18,9 @@ import {
 } from '@mui/material';
 import { ArrowBack, Save, Cancel, Add, Delete } from '@mui/icons-material';
 import axios from 'axios';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import '../Employees/DatePicker.css';
 
 interface Organization {
   objid: string;
@@ -38,6 +41,26 @@ interface ParentOrganization {
   stext: string;
   short: string;
 }
+
+// Helper functions for date conversion
+const parseDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  const parts = dateStr.split('.');
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (!isNaN(date.getTime())) return date;
+  }
+  return null;
+};
+
+const formatDate = (date: Date | null): string => {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+};
 
 const OrganizationForm: React.FC = () => {
   const { objid } = useParams<{ objid: string }>();
@@ -404,27 +427,51 @@ const OrganizationForm: React.FC = () => {
             <Grid item xs={12} sm={6} /> {/* Empty grid for spacing */}
 
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Valid From"
-                value={organization.begda || ''}
-                onChange={(e) => handleInputChange('begda', e.target.value)}
-                required
-                placeholder="dd.mm.yyyy"
-                helperText="Format: dd.mm.yyyy"
-              />
+              <Box>
+                <DatePicker
+                  selected={parseDate(organization.begda || '')}
+                  onChange={(date) => handleInputChange('begda', formatDate(date))}
+                  dateFormat="dd.MM.yyyy"
+                  placeholderText="DD.MM.YYYY"
+                  customInput={
+                    <TextField
+                      fullWidth
+                      required
+                      label="Valid From"
+                      helperText="Organization start date"
+                    />
+                  }
+                  showYearDropdown
+                  scrollableYearDropdown
+                  popperProps={{
+                    strategy: 'fixed'
+                  }}
+                />
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Valid To"
-                value={organization.endda || ''}
-                onChange={(e) => handleInputChange('endda', e.target.value)}
-                required
-                placeholder="dd.mm.yyyy"
-                helperText="Format: dd.mm.yyyy"
-              />
+              <Box>
+                <DatePicker
+                  selected={parseDate(organization.endda || '')}
+                  onChange={(date) => handleInputChange('endda', formatDate(date))}
+                  dateFormat="dd.MM.yyyy"
+                  placeholderText="DD.MM.YYYY"
+                  customInput={
+                    <TextField
+                      fullWidth
+                      required
+                      label="Valid To"
+                      helperText="Organization end date"
+                    />
+                  }
+                  showYearDropdown
+                  scrollableYearDropdown
+                  popperProps={{
+                    strategy: 'fixed'
+                  }}
+                />
+              </Box>
             </Grid>
           </Grid>
 
