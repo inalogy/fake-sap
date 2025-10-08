@@ -57,10 +57,10 @@ const Login: React.FC = () => {
         >
           <Box sx={{ mb: 3, textAlign: 'center' }}>
             <Typography component="h1" variant="h4" sx={{ color: '#0a6ed1', fontWeight: 'bold', mb: 1 }}>
-              SAP HCM
+              HRMS
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Human Capital Management System
+              Human Resource Management System
             </Typography>
           </Box>
 

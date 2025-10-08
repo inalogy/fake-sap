@@ -62,10 +62,10 @@ const Layout: React.FC = () => {
   ];
 
   const getPageTitle = () => {
-    if (location.pathname.startsWith('/employees')) return 'Human Capital Management';
+    if (location.pathname.startsWith('/employees')) return 'Human Resource Management System';
     if (location.pathname.startsWith('/organizations')) return 'Organizational Management';
     if (location.pathname === '/dashboard') return 'Dashboard Overview';
-    return 'SAP HCM System';
+    return 'HRMS';
   };
 
   const drawer = (
@@ -81,7 +81,7 @@ const Layout: React.FC = () => {
             textAlign: 'center'
           }}
         >
-          SAP HANA
+          HRMS
         </Typography>
         <Typography
           variant="body2"
@@ -91,7 +91,7 @@ const Layout: React.FC = () => {
             mt: 0.5
           }}
         >
-          Human Capital Management
+          Human Resource Management System
         </Typography>
       </Box>
 
@@ -158,7 +158,7 @@ const Layout: React.FC = () => {
             textAlign: 'center'
           }}
         >
-          SAP HCM System v2.0
+          HRMS v2.0
         </Typography>
       </Box>
     </Box>

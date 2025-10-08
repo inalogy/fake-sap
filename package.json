@@ -1,7 +1,7 @@
 {
-  "name": "fake-sap",
+  "name": "hrms-app",
   "version": "1.0.0",
-  "description": "SAP HCM and OM Simulation Application",
+  "description": "Human Resource Management System",
   "main": "server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",

@@ -98,7 +98,24 @@ const Employees: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
+
+    // If already in DD.MM.YYYY format, return as is
+    if (typeof dateString === 'string' && /^\d{2}\.\d{2}\.\d{4}$/.test(dateString)) {
+      return dateString;
+    }
+
+    // Handle SAP date format (YYYYMMDD)
+    if (typeof dateString === 'string' && dateString.length === 8 && /^\d{8}$/.test(dateString)) {
+      const year = dateString.substring(0, 4);
+      const month = dateString.substring(4, 6);
+      const day = dateString.substring(6, 8);
+      return `${day}.${month}.${year}`;
+    }
+
+    // Handle ISO date format
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+
     return date.toLocaleDateString('de-DE', {
       day: '2-digit',
       month: '2-digit',

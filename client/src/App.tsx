@@ -17,13 +17,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#0070f2', // SAP Blue
+      main: '#0070f2', // Primary Blue
       light: '#427cac',
       dark: '#004c9a',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#e26e00', // SAP Orange
+      main: '#e26e00', // Secondary Orange
       light: '#ff9830',
       dark: '#ad5600',
     },

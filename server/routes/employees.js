@@ -32,6 +32,7 @@ router.get('/', authenticateToken, async (req, res) => {
       query += ` AND (
         LOWER(e.firstname) LIKE LOWER($${paramCount}) OR
         LOWER(e.lastname) LIKE LOWER($${paramCount}) OR
+        LOWER(CONCAT(e.firstname, ' ', e.lastname)) LIKE LOWER($${paramCount}) OR
         LOWER(e.pernr) LIKE LOWER($${paramCount}) OR
         LOWER(e.email) LIKE LOWER($${paramCount})
       )`;
@@ -59,6 +60,7 @@ router.get('/', authenticateToken, async (req, res) => {
       countQuery += ` AND (
         LOWER(e.firstname) LIKE LOWER($${countParamCount}) OR
         LOWER(e.lastname) LIKE LOWER($${countParamCount}) OR
+        LOWER(CONCAT(e.firstname, ' ', e.lastname)) LIKE LOWER($${countParamCount}) OR
         LOWER(e.pernr) LIKE LOWER($${countParamCount}) OR
         LOWER(e.email) LIKE LOWER($${countParamCount})
       )`;
