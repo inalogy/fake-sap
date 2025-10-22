@@ -23,5 +23,8 @@
   "devDependencies": {
     "nodemon": "^3.0.1",
     "concurrently": "^8.2.1"
+  },
+  "overrides": {
+    "validator": "^13.15.15"
   }
 }
