@@ -5,7 +5,7 @@ const config = {
     port: process.env.DB_PORT || 5433, // Using 5433 to avoid conflict with system PostgreSQL
     database: process.env.DB_NAME || 'sap',
     username: process.env.DB_USER || 'sap_user',
-    password: process.env.DB_PASSWORD || 'P6v5AbvmO_EZQWVI.CqN8f8S',
+    password: process.env.DB_PASSWORD,
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
@@ -41,7 +41,7 @@ const config = {
     port: process.env.DB_PORT || 5433,
     database: process.env.DB_NAME || 'sap_test',
     username: process.env.DB_USER || 'sap_user',
-    password: process.env.DB_PASSWORD || 'P6v5AbvmO_EZQWVI.CqN8f8S',
+    password: process.env.DB_PASSWORD,
     dialect: 'postgres',
     logging: false
   }

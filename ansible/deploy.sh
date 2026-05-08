@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SAP HCM Application Deployment Script for Rocky Linux
+# HRMS Application Deployment Script for Rocky Linux
 # This script uses Ansible to deploy the application
 
 set -e
@@ -73,7 +73,7 @@ test_connectivity() {
 
 # Run deployment
 deploy() {
-    print_header "Deploying SAP HCM Application"
+    print_header "Deploying HRMS Application"
 
     print_status "Starting deployment..."
 
@@ -86,18 +86,18 @@ deploy() {
 
         echo ""
         print_header "Post-Deployment Information"
-        echo -e "Application Directory: ${GREEN}/opt/sap-hcm-app${NC}"
+        echo -e "Application Directory: ${GREEN}/opt/hrms-app${NC}"
         echo -e "Database: ${GREEN}PostgreSQL${NC} (localhost:5432)"
-        echo -e "Application User: ${GREEN}sap-app${NC}"
+        echo -e "Application User: ${GREEN}hrms-app${NC}"
         echo -e "Process Manager: ${GREEN}PM2${NC}"
         echo -e "Web Server: ${GREEN}Nginx${NC} (port 80)"
-        echo -e "API Server: ${GREEN}Node.js${NC} (port 3001, proxied via Nginx)"
+        echo -e "API Server: ${GREEN}Node.js${NC} (port 5000, proxied via Nginx)"
 
         echo ""
         echo "Useful commands on the server:"
-        echo "  sudo -u sap-app pm2 status          # Check application status"
-        echo "  sudo -u sap-app pm2 logs            # View application logs"
-        echo "  sudo -u sap-app pm2 restart all     # Restart application"
+        echo "  sudo -u hrms-app pm2 status          # Check application status"
+        echo "  sudo -u hrms-app pm2 logs            # View application logs"
+        echo "  sudo -u hrms-app pm2 restart all     # Restart application"
         echo "  sudo systemctl status nginx         # Check Nginx status"
         echo "  sudo systemctl status postgresql    # Check PostgreSQL status"
 
@@ -109,7 +109,7 @@ deploy() {
 
 # Main execution
 main() {
-    print_header "SAP HCM Application Deployment"
+    print_header "HRMS Application Deployment"
 
     # Change to ansible directory
     cd "$(dirname "$0")"

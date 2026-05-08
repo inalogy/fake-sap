@@ -1,17 +1,17 @@
 ---
-- name: Deploy SAP HCM Application on Rocky Linux
+- name: Deploy HRMS Application on Rocky Linux
   hosts: rocky_servers
   become: yes
   vars:
-    app_name: "sap-hcm-app"
-    app_user: "sap-app"
+    app_name: "hrms-app"
+    app_user: "hrms-app"
     app_dir: "/opt/{{ app_name }}"
     node_version: "18"
     postgres_version: "15"     # kept for reference (distro packages are used)
     db_name: "sap"
     db_user: "sap_user"
-    db_password: "P6v5AbvmO_EZQWVI.CqN8f8S"
-    app_port: 3005
+    db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+    app_port: 5000
     client_port: 3000
 
   tasks:

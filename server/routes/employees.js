@@ -176,7 +176,7 @@ router.put('/:pernr',
     body('lastname').optional().trim().escape(),
     body('email').optional().isEmail().normalizeEmail(),
     body('phone').optional().trim().escape(),
-    body('location').optional().trim().escape(),
+    body('location_name').optional().trim().escape(),
     body('orgeh').optional().trim().escape(),
     body('job').optional().trim().escape(),
     body('plans').optional().trim().escape(),
@@ -202,7 +202,7 @@ router.put('/:pernr',
       const updates = req.body;
 
       const allowedFields = [
-        'firstname', 'lastname', 'email', 'phone', 'location', 'orgeh', 'job', 'plans', 'title',
+        'firstname', 'lastname', 'email', 'phone', 'location_name', 'orgeh', 'job', 'plans', 'title',
         'contract_type', 'workschedule', 'birthdate', 'gender', 'natio', 'persg', 'persk', 'begda', 'endda'
       ];
       const updateFields = [];
@@ -263,7 +263,7 @@ router.post('/',
       const {
         firstname, lastname, email, phone, orgeh,
         plans, job, begda, endda, birthdate, gender, natio,
-        persg, persk, workschedule, contract_type, location, title
+        persg, persk, workschedule, contract_type, location_name, title
       } = req.body;
 
       // Generate next personnel number starting from 30000
@@ -282,7 +282,7 @@ router.post('/',
         INSERT INTO sap_hcm (
           pernr, firstname, lastname, email, phone, orgeh,
           plans, job, begda, endda, birthdate, gender, natio,
-          persg, persk, workschedule, contract_type, location, title, parent_pernr
+          persg, persk, workschedule, contract_type, location_name, title, parent_pernr
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $1)
         RETURNING *
       `;
@@ -290,7 +290,7 @@ router.post('/',
       const values = [
         pernr, firstname, lastname, email, phone, orgeh,
         plans, job, begda, endda, birthdate, gender, natio,
-        persg, persk, workschedule, contract_type, location, title
+        persg, persk, workschedule, contract_type, location_name, title
       ];
 
       const result = await db.query(insertQuery, values);

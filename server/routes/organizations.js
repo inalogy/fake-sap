@@ -42,7 +42,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     query += ` GROUP BY o.objid, o.otype, o.short, o.stext, o.parent_objid, o.begda, o.endda,
-               o.responsible_objid, o.costcenter, o.location, o.org_level, p.stext
+               o.responsible_objid, o.costcenter, o.location_name, o.org_level, p.stext
                ORDER BY o.objid`;
 
     const result = await db.query(query, params);
@@ -79,7 +79,7 @@ router.get('/tree', authenticateToken, async (req, res) => {
       FROM org_tree ot
       LEFT JOIN sap_hcm e ON ot.objid = e.orgeh
       GROUP BY ot.objid, ot.otype, ot.short, ot.stext, ot.parent_objid, ot.begda,
-               ot.endda, ot.responsible_objid, ot.costcenter, ot.location,
+               ot.endda, ot.responsible_objid, ot.costcenter, ot.location_name,
                ot.org_level, ot.level, ot.path
       ORDER BY ot.path
     `;
@@ -130,7 +130,7 @@ router.get('/:objid',
         LEFT JOIN sap_om c ON o.objid = c.parent_objid
         WHERE o.objid = $1
         GROUP BY o.objid, o.otype, o.short, o.stext, o.parent_objid, o.begda,
-                 o.endda, o.responsible_objid, o.costcenter, o.location,
+                 o.endda, o.responsible_objid, o.costcenter, o.location_name,
                  o.org_level, p.stext, m.firstname, m.lastname, m.email
       `;
 
@@ -180,7 +180,7 @@ router.put('/:objid',
     body('endda').optional().trim(),
     body('responsible_objid').optional().trim().escape(),
     body('costcenter').optional().trim().escape(),
-    body('location').optional().trim().escape(),
+    body('location_name').optional().trim().escape(),
     body('org_level').optional().trim().escape()
   ],
   async (req, res) => {
@@ -195,7 +195,7 @@ router.put('/:objid',
 
       const allowedFields = [
         'stext', 'short', 'otype', 'parent_objid', 'begda', 'endda',
-        'responsible_objid', 'costcenter', 'location', 'org_level'
+        'responsible_objid', 'costcenter', 'location_name', 'org_level'
       ];
       const updateFields = [];
       const updateValues = [];
@@ -248,7 +248,7 @@ router.post('/',
     body('endda').notEmpty().trim(),
     body('responsible_objid').optional().trim().escape(),
     body('costcenter').optional().trim().escape(),
-    body('location').optional().trim().escape(),
+    body('location_name').optional().trim().escape(),
     body('org_level').notEmpty().trim().escape()
   ],
   async (req, res) => {
@@ -260,7 +260,7 @@ router.post('/',
     try {
       const {
         objid, stext, short, otype, parent_objid, begda, endda,
-        responsible_objid, costcenter, location, org_level
+        responsible_objid, costcenter, location_name, org_level
       } = req.body;
 
       // Check if organization with this objid already exists
@@ -283,7 +283,7 @@ router.post('/',
       const insertQuery = `
         INSERT INTO sap_om (
           objid, otype, short, stext, parent_objid, begda, endda,
-          responsible_objid, costcenter, location, org_level
+          responsible_objid, costcenter, location_name, org_level
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING *
       `;
@@ -298,7 +298,7 @@ router.post('/',
         endda,
         responsible_objid || null,
         costcenter || null,
-        location || null,
+        location_name || null,
         org_level
       ];
 
