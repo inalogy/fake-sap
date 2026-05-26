@@ -58,7 +58,7 @@ CREATE TABLE public.sap_hcm (
     contract_type character varying,
     email character varying,
     phone character varying,
-    location character varying,
+    location_name character varying,
     firstname character varying,
     lastname character varying,
     title character varying,
@@ -84,7 +84,7 @@ CREATE TABLE public.sap_om (
     endda character varying,
     responsible_objid character varying,
     costcenter character varying,
-    location character varying,
+    location_name character varying,
     org_level character varying
 );
 
@@ -95,7 +95,7 @@ ALTER TABLE public.sap_om OWNER TO postgres;
 -- Data for Name: sap_hcm; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.sap_hcm (pernr, birthdate, gender, natio, begda, endda, orgeh, plans, job, persg, persk, workschedule, contract_type, email, phone, location, firstname, lastname, title, updated_at_char, parent_pernr, nobilitytitle) FROM stdin;
+COPY public.sap_hcm (pernr, birthdate, gender, natio, begda, endda, orgeh, plans, job, persg, persk, workschedule, contract_type, email, phone, location_name, firstname, lastname, title, updated_at_char, parent_pernr, nobilitytitle) FROM stdin;
 10026	09.12.2001	D	DE	01.01.2024	31.12.2026	1067	PL3813	IT-Administrator	Hilfskräfte	Nicht-Wissenschaftlich	Teilzeit	befristet	marcokusch@yahoo.de	00283 99873	Campus West	Dipl.-Ing.	Annamaria Schweitzer MBA.	Prof. Dr.	2025-09-15 15:30:22.973	00026	\N
 10437	05.02.1989	D	DE	01.03.2025	31.12.2025	1020	PL4494	Tutor	Beamte	Nicht-Wissenschaftlich	Nicht-Wissenschaftlich	befristet	nataliaziegert@googlemail.com	+49(0) 694588478	Campus Mitte	Lili	Trommler-Hertrampf	PD Dr.	2025-09-15 15:30:23.002	00437	\N
 20437	25.02.1989	D	DE	01.03.2025	31.12.2025	1103	PL4494	Tutor	Beamte	Nicht-Wissenschaftlich	Nicht-Wissenschaftlich	befristet	nataliaziegert@googlemail.com	+49(0) 694588478	Campus Mitte	Lili	Trommler-Hertrampf	PD Dr.	2025-09-15 15:30:23.031	00437	\N
@@ -2107,7 +2107,7 @@ COPY public.sap_hcm (pernr, birthdate, gender, natio, begda, endda, orgeh, plans
 -- Data for Name: sap_om; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.sap_om (objid, otype, short, stext, parent_objid, begda, endda, responsible_objid, costcenter, location, org_level) FROM stdin;
+COPY public.sap_om (objid, otype, short, stext, parent_objid, begda, endda, responsible_objid, costcenter, location_name, org_level) FROM stdin;
 1001	O	HOCHSCHU	IAM Factory Hochschule	\N	2020-01-01	9999-12-31	00818	CC1001	Campus West	Hochschule
 1002	O	ZENTRALE	Zentrale Verwaltung	1001	2020-01-01	9999-12-31	00818	CC1002	Campus West	Verwaltung
 1003	O	PERSONAL	Personalabteilung	1002	2020-01-01	9999-12-31	00818	CC1003	Campus Mitte	Abteilung
@@ -2358,7 +2358,7 @@ ALTER TABLE ONLY public.sap_om
 -- Name: sap_hcm update_updated_at_char; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
-CREATE TRIGGER update_updated_at_char BEFORE UPDATE ON public.sap_hcm FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_char_column();
+CREATE TRIGGER update_updated_at_char BEFORE INSERT OR UPDATE ON public.sap_hcm FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_char_column();
 
 
 --

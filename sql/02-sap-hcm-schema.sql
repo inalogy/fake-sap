@@ -11,7 +11,8 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO sap_user;
 
 -- Set default privileges for future tables
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO sap_user;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO sap_user;[root@fake-sap sql]# cat 02-sap-hcm-schema.sql
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO sap_user;
+
 -- Function
 CREATE OR REPLACE FUNCTION update_updated_at_char_column()
 RETURNS TRIGGER AS $$
